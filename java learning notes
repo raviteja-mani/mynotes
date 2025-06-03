@@ -1,0 +1,1272 @@
+1.) Object
+2.) Byte, Integer, Character,Long, Short,Boolean,Float ,Double,Number
+3.)Objects
+4.)Arrays
+5.)CharSequence(Interface),AbstractStringBuilder(sealed abstract) - String, StringBuffer, StringBuilder
+6.)Anotations - Deprecated, FunctionalInterface, Override,Documented,ElementType(enum-),Retention,Target
+7.)Interfaces - Clonable, Serializable,RandomAccess(maker interface), Comparable, Comparator,Appendable,
+8.)Iterator, Iterable,SplitIterator ---- UnsupportedOperationException,ClassCastException,NullPointerException, ConcurrentModificationException(RuntimeException)
+9.)COllection,Collections -methods for unmodifiable wrappers ,synchronized wrappers
+10.)List - ArrayList, LinkedList,Vector,Stack
+11.)Queue - PriorityQueue, Deque, ArrayDeque,LinkedList
+12.)Set - SortedSet-NavigableSet- TreeSet,HashSet,LinkedHashSet
+13.)Map - SortedMap - TreeMap, HashMap, LinkedHashMap,ConcurrentHashMap
+ImmutableCollection
+14.)Fail-fast Iterators	Throw ConcurrentModificationException if collection is modified concurrently
+15.)HashTable,
+16.)Streams - all Functional Interfaces 
+17.)Collectors
+18.)Optional
+----------
+19.)Records
+20.)Threads
+21.)ThreadLocal
+22.)Executors, ExectorService
+23.)CompletableFuture
+24.)Semaphores, Atomic__
+25.)ReentrantLock
+26.) how to write sealed classes
+26.)Files,Paths
+27/character Streams 
+28.)byte streaming
+29.)Zipfile handling classes(notdone)
+----------------------------------------------------------------------------------------------
+0.)Basic Concepts :--
+
+Marker Interfaces :-
+------------------
+Marker interfaces are “tags” with no methods.
+
+They indicate special properties or capabilities of classes.
+
+RandomAccess marks lists with fast random element access to help algorithms optimize their performance.
+
+Other common marker interfaces include Serializable, Cloneable, and Remote.
+
+Why isn’t RandomAccess just a method in List?
+It’s a marker interface because it’s a property or capability rather than a behavior.
+
+It avoids cluttering the List interface with methods solely for optimization hints.
+
+Allows compile-time type checks and instanceof at runtime.
+
+What does RandomAccess mean?
+Some List implementations like ArrayList provide O(1) time for get(int index) and set(int index, E element).
+
+Others like LinkedList have O(n) time complexity for these operations because they need to traverse nodes.
+
+The RandomAccess interface is used to signal this property so that generic algorithms can optimize their behavior:
+
+Example: Why is it useful?
+Algorithms like Collections.sort() or utility methods can check if a list implements RandomAccess.
+
+If yes, they use index-based loops for better performance.
+
+If no, they use iterator-based traversal to avoid expensive get(i) calls.
+
+Code snippet from Collections class:
+
+public static <T> void sort(List<T> list) {
+    if (list instanceof RandomAccess && list.size() > 10) {
+        // Use optimized algorithm with index-based access
+    } else {
+        // Use iterator-based algorithm (better for LinkedList)
+    }
+}
+Implementations of RandomAccess
+ArrayList — implements RandomAccess
+
+Vector — implements RandomAccess
+
+Stack (extends Vector) — implements RandomAccess
+
+CopyOnWriteArrayList — implements RandomAccess
+
+Implementations that do NOT implement RandomAccess
+LinkedList
+
+AbstractSequentialList
+ArrayDeque 
+
+CopyOnWriteArrayList is a bit special — it does implement RandomAccess because it uses an internal array.
+
+Early binding vs late Binding 
+---------------------------------
+
+In Java (and object-oriented programming in general), the terms early binding and late binding refer to the time at which the method to be executed is determined — at compile time or at runtime.
+
+🧠 Early Binding (Static Binding)
+🔸 Definition:
+Early binding occurs when the method call is resolved at compile time.
+
+🔸 When It Happens:
+
+Happens with static methods, final methods, private methods, and overloaded methods.
+
+The compiler knows exactly which method will be called.
+
+🔄 Late Binding (Dynamic Binding)
+🔸 Definition:
+Late binding occurs when the method call is resolved at runtime.
+
+🔸 When It Happens:
+
+Happens with overridden methods.
+
+The actual method that gets executed depends on the object type at runtime, not the reference type.
+
+transient keyword:
+-----------------
+If a field is marked as transient, it will be set to its default value after deserialization:
+
+null for objects
+
+0 for numeric types
+
+false for boolean
+
+The transient keyword only affects Java’s built-in serialization (i.e., when using ObjectOutputStream and Serializable).
+
+🛠 Use Cases
+Scenario	Use transient?	Reason
+Sensitive information (passwords, keys)	✅	To avoid exposing it via serialization
+Non-serializable fields (e.g., Thread)	✅	Prevent NotSerializableException during serialization
+Derived/calculable fields				✅	Can be recalculated after deserialization
+Persistent or essential data			❌	Should be serialized to maintain object state
+** for example in java Collections like ArrayList all data members are initialized with transient because they dont to store unwanted data like null values 
+so instead it uses writeObject and readObject methods to write and read while serializing and deserilizing
+
+fail-fast vs fail safe :-
+-------------------------
+
+
+🔍 1. Fail-Fast Iterators
+Fail-fast iterators immediately throw a ConcurrentModificationException if the underlying collection is modified (structurally) after the iterator is created — except through the iterator's own methods.
+
+✅ Applies To:
+Most classes in java.util package:
+
+ArrayList, HashSet, HashMap, LinkedList, etc.
+
+⚠️ Unsafe Example (Fail-Fast Behavior):
+
+List<String> list = new ArrayList<>();
+list.add("A");
+list.add("B");
+list.add("C");
+
+for (String item : list) {
+    if (item.equals("B")) {
+        list.remove(item); // Structural modification outside iterator
+    }
+}
+🛑 Output:
+
+cpp
+Copy
+Edit
+Exception in thread "main" java.util.ConcurrentModificationException
+✅ Safe Example (Using Iterator’s remove method):
+Iterator<String> it = list.iterator();
+while (it.hasNext()) {
+    if (it.next().equals("B")) {
+        it.remove(); // Safe, modifies via iterator
+    }
+}
+🔬 How It Works:
+The iterator keeps an internal modCount (value tracking structural changes).
+
+If modCount changes unexpectedly, the iterator throws an exception.
+
+🚨 Key Traits of Fail-Fast:
+Feature	Behavior
+Detection of modification	Immediate during iteration
+Throws exception	Yes (ConcurrentModificationException)
+Thread-safe	No
+Performance	Fast (no extra memory or copying)
+
+🛡️ 2. Fail-Safe Iterators
+Fail-safe iterators do not throw exceptions if the collection is modified during iteration. They operate on a clone or snapshot of the collection to avoid conflicts.
+
+✅ Applies To:
+Concurrent collections in the java.util.concurrent package:
+
+CopyOnWriteArrayList
+
+ConcurrentHashMap
+
+ConcurrentSkipListSet, etc.
+
+✅ Example (Fail-Safe Behavior):
+CopyOnWriteArrayList<String> list = new CopyOnWriteArrayList<>();
+list.add("A");
+list.add("B");
+list.add("C");
+
+for (String item : list) {
+    if (item.equals("B")) {
+        list.remove(item); // No exception thrown
+    }
+}
+🟢 Output:
+
+css
+Copy
+Edit
+A
+B
+C
+(B is still printed because the iterator works on a snapshot.)
+
+🔬 How It Works:
+Takes a copy of the collection before iteration.
+
+Changes to the original collection don’t affect the iterator.
+
+🧠 Key Traits of Fail-Safe:
+Feature	Behavior
+Detection of modification	Not detected (works on copy)
+Throws exception	No
+Thread-safe	Yes
+Performance	Slower (due to copying)
+
+🧮 Comparison Table
+Feature							Fail-Fast							Fail-Safe
+Throws exception				Yes (ConcurrentModificationException)	No
+Thread-safe						No										Yes
+Backed by original data			Yes										No (operates on a snapshot/copy)
+
+Common injava.util	java.util.concurrent
+Examples	ArrayList, HashMap	CopyOnWriteArrayList, ConcurrentHashMap
+Performance	Faster (no copying)	Slower (due to snapshot)
+
+🧩 Which One Should You Use?
+Use fail-fast iterators:
+
+In single-threaded environments.
+
+When performance is critical and concurrent modification is not expected.
+
+Use fail-safe iterators:
+
+In multi-threaded environments.
+
+When you expect modifications during iteration.
+Method reference is a syntactic sugar for lambda expressions that refer to an existing method by name.
+
+---------------------------------------------------------------------------------------------
+Method Referencing:--
+
+Type											Syntax								Example
+Static method reference						Class::staticMethod					Integer::parseInt
+Instance method of a particular object		obj::instanceMethod					str::toLowerCase
+Instance method of arbitrary object type	Class::instanceMethod				String::toLowerCase
+Constructor reference						Class::new							ArrayList::new
+--------------------------------------------------------------------------------------------
+1.) Object class 
+Method Name	Return Type	Access Modifier	Overridable
+getClass()	Class<?>	public final	❌
+hashCode()	int	public	✅
+equals()	boolean	public	✅
+clone()	Object	protected	✅
+toString()	String	public	✅
+notify()	void	public final	❌
+notifyAll()	void	public final	❌
+wait()	void	public final	❌
+wait(long)	void	public final	❌
+wait(long,int)	void	public final	❌
+finalize()	void	protected	✅ (deprecated)
+---------------------------------------------------------------------------------------------
+2.) Wrapper classes 
+Wrapper Class	Cache Range	Method used	Notes
+Integer	-128 to 127	Integer.valueOf()	Configurable max via JVM option
+Long	-128 to 127	Long.valueOf()	Same as Integer
+Short	-128 to 127	Short.valueOf()	
+Byte	All (-128 to 127)	Byte.valueOf()	Entire range cached
+Character	0 to 127 (ASCII)	Character.valueOf()	
+Boolean	true, false (only 2)	Boolean.valueOf()	Only two cached instances
+
+🔁 Methods Common Across (Most) Wrapper Classes
+Method	Description
+valueOf(String s) / valueOf(primitive)	Converts a string or primitive to a wrapper object.
+parseXxx(String s)	Converts a string to a primitive (e.g., Integer.parseInt("123") → 123).
+xxxValue()	Converts to other primitive types (e.g., intValue(), doubleValue()).
+compareTo(Xxx o)	Compares two wrapper objects.
+equals(Object obj)	Compares the values of two wrapper objects.
+toString()	Returns a string representation of the object.
+hashCode()	Returns the hash code for the object.
+compare(x, y)	Static method to compare two primitives or objects (e.g., Integer.compare(a, b)).
+decode(String s)	(Only numeric types) Converts a string with radix hints (like "0x" for hex) to an object.
+
+🧠 Summary Table
+Method	All Numerics	Boolean	Character	Notes
+valueOf()	✅	✅	✅	Creates wrapper object from value
+parseXxx()	✅	✅	❌	Returns primitive
+xxxValue()	✅	❌	❌	Converts to other primitive types
+compareTo()	✅	✅	✅	Object comparison
+compare() (static)	✅	✅	✅	Static compare of two primitives
+equals()	✅	✅	✅	Compares values
+toString()	✅	✅	✅	Converts value to String
+hashCode()	✅	✅	✅	Returns hash code
+decode()	✅ (some)	❌	❌	Converts hexadecimal/oct/bin to number
+
+-> Number class is abstract class 
+-------------------------------------------------------------------------------------
+3.)Objects:
+Method	Null Safe	Use Case
+equals(a, b)		✅	Compare two objects
+deepEquals(a, b)	✅	Compare deep structure (arrays, etc.)
+hash(a, b, ...)		✅	Generate hash codes for fields
+hashCode(obj)		✅	Safe hash code generation
+requireNonNull(obj)	✅	Parameter validation
+requireNonNull(obj, msg)	✅	Validation with custom message
+isNull(obj)			✅	Check if object is null
+nonNull(obj)		✅	Check if object is not null
+compare(a, b, comparator)	✅	Comparator-based comparison
+
+The Objects class is especially helpful when implementing equals(), hashCode(), and toString() in your own classes.
+
+Example usage in a class:
+@Override
+public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Person)) return false;
+    Person that = (Person) o;
+    return Objects.equals(name, that.name) && Objects.equals(age, that.age);
+}
+
+@Override
+public int hashCode() {
+    return Objects.hash(name, age);
+}
+-------------------------------------------------------------------------------------------
+4.)Arrays:
+This class contains various methods for manipulating arrays (such as sorting and searching).
+ This class also contains a static factory that allows arrays to be viewed as lists.
+The methods in this class all throw a NullPointerException, if the specified array reference is null,
+ except where noted.
+ 
+ Method	Use Case
+sort() -->	Sort array elements -- uses Dual-Pivot Quicksort This algorithm offers O(n log(n)) performance
+ on all data sets, and is typically faster than traditional (one-pivot) Quicksort implementations.
+binarySearch() -->	Search for a value in sorted array
+equals(array1[],array2[]) -->	Compare arrays (shallow)
+deepEquals() -->	Compare nested arrays
+toString() ->	Print array as string
+deepToString() ->	Print nested array as string
+copyOf() ->	Resize or clone array
+copyOfRange() ->	Copy subarray
+fill()->	Fill entire array with a value
+setAll() ->	Populate using function
+stream() ->	Convert to Stream (Java 8+)
+swap()-> swap based on indexes
+
+5.)String, StringBuilder, StringBuffer 
+
+.contains(CharSequence)
+.replace(CharSequence,CharSequence) .replaceAll(String) .replaceFirst() 
+.contentEquals(CharSequence)
+.join(CharSequence,CharSequence...)
+.toCharArray();
+.valueOf(char[]||Object )/
+.strip() .stripLeading() .stripTrailing() .trim()
+.isBlank()
+.indexOf(String,int fromINdex) .indexOf(Sting) .indexOf(int,int) .indexOf(int)
+.lastIndex()
+.startsWith(String,int fromIndex) .startsWith(String) 
+.endsWith(String)
+.compareTo(String) .compareToIgnoreCase(String)
+.equals(String) .equalsIgnoreCase(String)
+.charAt(int)
+.isEmpty()
+.length()
+.subString()
+.isBlank()
+String[] .split(String,int) (String) (char,int)
+.concat(String)
+.lines() stream 
+
+StringBuilder():-
+.append(CharSequence)
+.delete(int start,int end)
+.deleteCharAt(int)
+.replace(int,int,String)
+.insert(int offset,String) (int,char[])(int,CharSequence)
+.indexOf(String)(String,int)
+.lastIndexOf(String)
+.reverse()
+.repeat()
+.toString()
+.writeObject(ObjectOutputStream)
+.chars() -> returns IntStream
+.subString()
+.setCharAt()
+
+-------------------------------------------------------------------------------------------
+Java Collectinos:--
+-----------------
+
+Iterable -> Collection ->SequencedCollection(for reverse ordered Collection) -> List 
+																			-> Deque 
+																			-> SequencedSet ->SortedSet -> NavigableSet ->TreeSet(class)																			
+																							->HashSet->LinkedHashSet 
+													
+Collection -> AbstractCollection -> AbstractList -> AbstractSequentialList -> LinkedList 
+								 -> AbstractSet ->HashSet 
+								 -> AbstractQueue ->PriorityQueue 
+Map -> AbstractMap ->HashMap 
+	->SequencedMap ->LinkedHashMap 		
+	->SortedMap ->TreeMap 
+Dictionary(abstract) -> HashTable by Map<>
+for all remove :E
+for all add :void 
+set():E 
+----------------------------------------------------------------------------------
+Collection	Default Capacity	Growth Strategy	New Capacity Calculation
+ArrayList	10	Grow by 50% (1.5×)	newCap = oldCap + (oldCap >> 1)
+Vector	10	Double capacity (2×)	newCap = oldCap * 2
+HashMap	16	Double capacity (2×)	newCap = oldCap * 2
+HashSet	16 (via HashMap)	Double capacity (2×)	Same as HashMap
+ArrayDeque	16	Double capacity (2×)	newCap = oldCap << 1
+
+contains()  always uses indexOf() -> indexOfRange() -> uses equals method of that element 
+----------------------------------------------------------------------------------
+Iterator - next() , hasNext(), remove()
+Iterable - iterator() , forEach()-d , spliterator()-d 
+ListIterator - hasNext(), next() , hasPrevious(), previous(),nextIndex(), previousIndex(), remove(), set(E),add(E)
+for(int i: list) -> uses .iterator() method to retrieve elements 
+Collection extends Iterable :
+.size()
+.isEmpty()
+.contains(Object)
+.iterator() Iterator 
+.toArray() - Object[]
+.add(E):boolean 
+.remove(Object):boolean 
+.removeIf(Predicate)
+.containsAll(Collection)
+.addAll(COllection):boolean 
+.removeAll(Collection)
+.clear()
+.equals()
+.hashCode()
+.spliterator()
+.stream()
+.parallelStream()
+
+Collections:
+.sort(List)
+.binarySearch()
+.reverse(List) 
+.swap(List,int,int) 
+.fill(List,T Object)
+.copy(List dst,List src)
+.min(Collection)
+.max(Collection)
+.rotate(List,int Dist)
+.replaceAll(List,oldVal,newVal)
+.indexOfSubList(List src,List target)
+.lastIndexOfList(List src,List target)
+.unmodifiableXXX(X) x-> Collection, SequencedCollection ,Set ,SequencedSet ,SortedSet , NavigableSet,
+ List, Map ,SequencedMap, SortedMap, NavigableMap 
+.synchronizedXXX(X) X-> Collection ,Set  ,SortedSet , NavigableSet,
+ List, Map ,SequencedMap, SortedMap, NavigableMap 
+.emptyXXX() X-> Collection ,Set  ,SortedSet , NavigableSet,
+ List, Map ,SequencedMap, SortedMap, NavigableMap 
+.singletonXX(X) X->Set , List ,Iterator, Spliterator,Map 
+.nCopies(int,T)
+.reverseOrder(Comparator)
+.addAll(Collection , Collection....)
+
+Returns an <a href="Collection.html#unmodview">unmodifiable view</a> of the
+     * specified collection. Query operations on the returned collection "read through"
+     * to the specified collection, and attempts to modify the returned
+     * collection, whether direct or via its iterator, result in an
+     * {@code UnsupportedOperationException}.<p>
+ The returned collection will be serializable if the specified collection
+     * is serializable.
+	 Returns a synchronized (thread-safe) collection backed by the specified
+     * collection.  In order to guarantee serial access, it is critical that
+     * <strong>all</strong> access to the backing collection is accomplished
+     * through the returned collection.<p>
+     *
+     * It is imperative that the user manually synchronize on the returned
+     * collection when traversing it via {@link Iterator}, {@link Spliterator}
+     * or {@link Stream}:
+     * <pre>
+     *  Collection c = Collections.synchronizedCollection(myCollection);
+     *     ...
+     *  synchronized (c) {
+     *      Iterator i = c.iterator(); // Must be in the synchronized block
+     *      while (i.hasNext())
+     *         foo(i.next());
+     *  }
+     * </pre>
+     * Failure to follow this advice may result in non-deterministic behavior.
+     *
+     * <p>The returned collection does <i>not</i> pass the {@code hashCode}
+     * and {@code equals} operations through to the backing collection, but
+     * relies on {@code Object}'s equals and hashCode methods.  This is
+     * necessary to preserve the contracts of these operations in the case
+     * that the backing collection is a set or a list.<p>
+     *
+     * The returned collection will be serializable if the specified collection
+     * is serializable.
+     *
+     * @param  <T> the class of the objects in the collection
+     * @param  c the collection to be "wrapped" in a synchronized collection.
+     * @return a synchronized view of the specified collection.
+     */
+	 
+SequencedCollection:--
+.reversed()
+.addFirst() :void 
+.addLast() :void 
+.getFirst()
+.getLast()
+.removeFirst() :E
+.removeLast() : E
+
+Queue :- queue dont allow null elements throws NPE
+* Inserts the specified element into this queue if it is possible to do so
+     * immediately without violating capacity restrictions, returning
+     * {@code true} upon success and throwing an {@code IllegalStateException}
+     * if no space is currently available.
+     *
+     * @param e the element to add
+     * @return {@code true} (as specified by {@link Collection#add})
+     * @throws IllegalStateException if the element cannot be added at this
+     *         time due to capacity restrictions
+     * @throws ClassCastException if the class of the specified element
+     *         prevents it from being added to this queue
+     * @throws NullPointerException if the specified element is null and
+     *         this queue does not permit null elements
+     * @throws IllegalArgumentException if some property of this element
+     *         prevents it from being added to this queue
+.add(E):boolean - add element to queue 
+.offer(E):boolean 
+.remove():E - removed head of queue and throws exception if empty 
+.poll():E - removed head of queue and returns null if empty 
+.element():E - removed head of queue and throws NoSuchElementException if empty 
+.peek():E -retrives head of queue and returns null if empty 
+
+PriorityQueue:--
+private static final int DEFAULT_INITIAL_CAPACITY = 11;
+
+    /**
+     * Priority queue represented as a balanced binary heap: the two
+     * children of queue[n] are queue[2*n+1] and queue[2*(n+1)].  The
+     * priority queue is ordered by comparator, or by the elements'
+     * natural ordering, if comparator is null: For each node n in the
+     * heap and each descendant d of n, n <= d.  The element with the
+     * lowest value is in queue[0], assuming the queue is nonempty.
+     */
+    transient Object[] queue; 
+new PriorityQueue(int initialCapacity)
+new PriorityQueue(int initialCapacity,Comparator)
+new PriorityQueue(Collection)
+all methods from Queue interface ,Collection ,Iterable 
+
+Dequeue:- Queue , SequencedCollection
+
+				Throws exception		Special value
+Insert			addFirst(e)				offerFirst(e)
+				addLast(e)				offerLast(e)
+Remove			removeFirst()			pollFirst()
+				removeLast()			pollLast()
+Examine			getFirst()				peekFirst()
+				getLast()				peekLast()
+.push()
+.pop()
+.peek() from stack
+
+ArrayDequeue:--
+ * Resizable-array implementation of the {@link Deque} interface.  Array
+ * deques have no capacity restrictions; they grow as necessary to support
+ * usage.  They are not thread-safe; in the absence of external
+ * synchronization, they do not support concurrent access by multiple threads.
+ * Null elements are prohibited.  This class is likely to be faster than
+ * {@link Stack} when used as a stack, and faster than {@link LinkedList}
+ * when used as a queue.
+ users resizable circular array in implementation
+ dont allow null elements 
+methods are same as  same as Dequeue 
+.removeFirstOccurence(T)
+.removeLastOccurence(T)
+ Use ArrayDeque when:
+You need a stack or queue.
+You don’t need random access or List features.
+You want better performance and memory efficiency.
+-------------------------------------------------------------------------------------------------------------------------------
+List :-
+
+all methods from Collection and SequencedCollection
+.lastIndexOf()
+.indexOf()
+.listIterator()
+.listIterator(int startPostition)
+.subList(int,int)
+.of(..) returns UnmodifiableList 
+.copyOf(COllection) returns unmodifiableList
+.toArray()
+.contains(E)
+.set(int index, E element) ****
+allows null elements in list 
+
+ArrayList:- extends List ,RandomAccess ,Serializable,Cloneable
+- is Clonable 
+- Random Access  fast like O(1)
+.trimToSize()
+.ensureCapacity(int)
+
+
+Vector:- extends List ,RandomAccess ,Serializable,Cloneable
+same as ArrayList but synchronized
+
+Stack:- 
+.push(E)
+.pop()
+.peek()
+.empty()
+.search()
+.elements():Enumeration
+
+there is not Constructor only Stack();no aurgs
+LinkedList:- extends List ,Dequeue ,Clonable, Serializable
+
+-> uses Double-Linked Lists DataStructures by having element enclosed in a Node Object and also storing the next and previous node addresses 
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+Map:-
+
+.size()
+.isEmpty()
+.containsKey(E)
+.containsValue(E)
+.get(key)
+.put(K,V):V
+.remove(E):V 
+.putAll(Map) :void 
+.clear()
+.keySet()**
+.values()**
+.entrySet() :Set<Entry> Entry -> getKey() ,getValue(), .setValue(),SetKey()
+.getOrDefault(K,V)
+.putIfAbsent(K,V):V
+.computeIfAbsent(K,Function):V
+.computeIfPresent(K,BiFunction):V 
+.compute()
+.merge(K,V,BiFunction)
+.replaceAll(BiFunction) :void  
+.replace(K,V,V) new ,old  :boolean 
+.replace()
+.remove(key,value)
+
+.equals()
+.hashCode()
+.of(K,V,K,V..) unmodifiableMap
+.copyOf(Map) unModifiableMap 
+
+HashMap:--
+-> need loadfactor - 0.75f
+-> need defaultSize = 16 
+->need capacity = defaultSize;
+-> store size 
+-> create a Node implements Map.Entry 
+	-> has Node next  storing next node just like the linkedlist 
+	-> contains Key ,Value params 
+	-> methods getKey(),getValue(),setKey(),setValue()
+-> has bucket array of size bucket[size]
+->has to resize if the size i.e values that is put is ((size/capacity)>0.75) 
+-> after resize() then do rehashing i.e we need to rearrange the nodes into buckets by creating new hash value 
+-> generating hash() to find the hash of key  
+private int hash(K key) {
+        return (key == null) ? 0 : Math.abs(key.hashCode() % capacity);
+    }
+->implement put(K,V),get(K),isEmpty(),resize(),hash(),remove(K),print() for testing
+
+->using linkedlist because of hash collisions
+
+SequenceMap:-
+.reversed()
+.firstEntry();
+.lastEntry()
+.pollFirstEntry()
+.pollLastEntry()
+.putFirst()
+.putLast()
+.sequencedKeySet():SequencedSet 
+.sequencedValues():SequencedCollection 
+.sequencedEntrySet():SequencedSet
+
+LinkedHashMap extends HashMap implements SequencedMap:-
+-> uses double linkedlist
+->preserves head and tail in each node 
+
+SortedMap :-
+.headMap()
+.tailMap()
+.firstKey()
+.lastKey()
+
+NavigableMap:-
+
+.lowerKey(K)
+.floorEntry(K)
+.floorKey(K)
+.ceilingKey(K),.ceilingEntry(K)
+.higherEntry(K),.higherKey(E)
+.fisrtEntry()
+.lastEntry()
+.pollFirstEntry()
+.pollLastEntry()
+.descendingMap()
+.navigableMap()
+.descendingKeySet()
+.headMap()
+.TailMap()
+
+
+
+
+TreeMap:-
+-> uses Red black tree (self balanced binary tree) to store data internally 
+->all from Navigable map 
+->timecomplexity - O(logn)
+
+Set:
+-> set uses internally its corresponding maps 
+-> if we are using concurrentHashMap we can have method .newKeySet()
+
+Set:-extends Collection 
+
+->can have atmost one null value 
+->
+.of(..) returns UnmodifiableList 
+.copyOf(COllection) returns unmodifiableList
+.toArray()
+.contains(E)
+
+SequencedSet :- extends SequencedCollection 
+.reversed()
+
+SortedSet :-
+--------------------------------------------------------------------------------------------------------------------------------------------
+FunctionalInterfaces:
+---------------------
+
+Function<T,R> :-
+.apply(T):R 
+.andThen(Function<R,V>):Function<R,V> -> (T t) -> after.apply(apply(t))
+.identity():T 
+
+Predicate<T>:-
+.test():boolean
+.and(Predicate):Predicate 
+.negate()
+.or(Predicate):Predicate 
+.isEqual()
+.not(Predicate):Predicate 
+
+Supplier<T>:
+get():T 
+
+Consumer<T>:--
+.accept(T):void 
+.andThen(Consumer<T>):Consumer<T>
+
+Streams :-
+--------
+.filter(Predicate)
+.map(Function<T,R>)
+.mapToInt(ToIntFunction)
+.mapToXXX(ToXXFunction)
+.flatMap(Function<T,Stream>) eg. Stream<String> words = lines.flatMap(line -> Stream.of(line.split(" +")));
+.flatMapToXX(Function<T,XXStream>
+.mapMulti(BiConsumer<T,Consumer<R>) eg.,,
+ class C {
+     *     static void expandIterable(Object e, Consumer<Object> c) {
+     *         if (e instanceof Iterable<?> elements) {
+     *             for (Object ie : elements) {
+     *                 expandIterable(ie, c);
+     *             }
+     *         } else if (e != null) {
+     *             c.accept(e);
+     *         }
+     *     }
+     *
+     *     public static void main(String[] args) {
+     *         var nestedList = List.of(1, List.of(2, List.of(3, 4)), 5);
+     *         Stream<Object> expandedStream = nestedList.stream().mapMulti(C::expandIterable);
+     *     }
+	  Stream<Number> numbers = ... ;
+     *     List<Integer> integers = numbers.<Integer>mapMulti((number, consumer) -> {
+     *             if (number instanceof Integer i)
+     *                 consumer.accept(i);
+     *         })
+     *         .collect(Collectors.toList());
+.mapMultiToXXX(BiConsumer<T,XXConsumer<R>)
+.distinct()
+.sorted()
+.sorted(Comparator<>)
+.peek(Consumer<T>)
+.limit(long)
+.skip(long)
+.takeWhile(Predicate<T>)
+.dropWhile(Predicate<T>)
+.collect(Collector<? super T, A, R> collector):R 
+.collect(Supplier<R> supplier,
+                  BiConsumer<R, ? super T> accumulator,
+                  BiConsumer<R, R> combiner):R
+				  
+ *     String concat = stringStream.collect(StringBuilder::new, StringBuilder::append,
+     *                                          StringBuilder::append)
+     *                                 .toString();
+     *     List<String> asList = stringStream.collect(ArrayList::new, ArrayList::add,
+     *                                                ArrayList::addAll);
+terminal functions:
+.forEach(Consumer<T>):void 
+.toArray():Object - terminal
+.toArray(IntFunction<A[]> generator):A[]
+.reduce(T,BinaryOperator<R,U,V>):R
+  *     U result = identity;
+     *     for (T element : this stream)
+     *         result = accumulator.apply(result, element)
+     *     return result;
+.reduce(BinaryOperator<R,U,V>):Optional<R>
+.reduce(U identity,BiFunction<U, ? super T, U> accumulator, BinaryOperator<U> combiner):U  -- uses parallel processing
+class Stats {
+    int sum;
+    int count;
+}
+
+List<Integer> numbers = List.of(1, 2, 3, 4, 5);
+
+Stats stats = numbers.stream().reduce(
+    new Stats(),
+    (s, n) -> {
+        s.sum += n;
+        s.count++;
+        return s;
+    },
+    (s1, s2) -> {
+        s1.sum += s2.sum;
+        s1.count += s2.count;
+        return s1;
+    }
+);
+
+// Output: stats.sum = 15, stats.count = 5
+.toList() returns UnmodifiableList 
+.min(Compartor)
+.max(Comparator)
+.count(long)
+.anyMatch(Predicate)
+.allMatch(Predicate)
+.noneMatch(Predicate)
+.findFirst():Optional(T)
+.findAny():Optional<T>
+.collect(Collector)
+static methods :-
+.builder():Builder -- creates builder has buiild():Stream  extends Consumer 
+.of(T) :Stream 
+.of(T..):Stream 
+.ofNullable(T):Stream  if null empty stream otherwise with element 
+.concat(Stream,Stream):Stream 
+
+
+--------------------------------------
+
+Collectors:-- has util class 
+----------------------
+.toCollection(Supplier<C>) C is returning Collection
+.toList()
+    * Returns a {@code Collector} that accumulates the input elements into a
+     * new {@code List}. There are no guarantees on the type, mutability,
+     * serializability, or thread-safety of the {@code List} returned; if more
+     * control over the returned {@code List} is required, use {@link #toCollection(Supplier)}.
+     *
+.toUnmmodifiableList() - dont allow null throws NullPointerException
+.toSet()
+.toUnmodifiableSet()
+.joining(): Collector<CharSequence, ?, String>
+.joining(CharSequence delimiter): Collector<CharSequence, ?, String>
+.joining(CharSequence delimiter,CharSequence prefix,CharSequence suffix): Collector<CharSequence, ?, String> 
+.mapping(Function<? super T, ? extends U> mapper, Collector<? super U, A, R> downstream): Collector<T, ?, R>
+.flatMapping(Function<? super T, ? extends Stream<? extends U>> mapper,
+                                   Collector<? super U, A, R> downstream):  Collector<T, ?, R> 
+.filtering(Predicate<? super T> predicate,
+                                 Collector<? super T, A, R> downstream):     Collector<T, ?, R> 
+.collectingAndThen(Collector<T,A,R> downstream,Function<R,RR> finisher) :	Collector<T,A,RR> 
+List<String> unmodifiableList = people.stream()
+    .map(Person::getName)
+    .collect(Collectors.collectingAndThen(
+        Collectors.toList(),                // downstream
+        Collections::unmodifiableList       // finisher
+    ));
+.counting() :Collector<T, ?, Long>
+.minBy(Comparator<? super T> comparator):  Collector<T, ?, Optional<T>>
+.maxBy(Comparator<? super T> comparator):Collector<T, ?, Optional<T>>
+.summingInt(ToIntFunction<? super T> mapper):Collector<T, ?, Integer>
+.averagingInt(ToIntFunction<? super T> mapper):Collector<T, ?, Double>
+.reducing(T identity, BinaryOperator<T> op):Collector<T, ?, T>
+.reducing(BinaryOperator<T> op):Collector<T, ?, Optional<T>>
+.reducing(U identity,Function<? super T, ? extends U> mapper,BinaryOperator<U> op):Collector<T, ?, U> 
+
+.groupingBy(Function<? super T, ? extends K> classifier): Collector<T, ?, Map<K, List<T>>>
+.groupingBy(Function<? super T, ? extends K> classifier,
+             Collector<? super T, A, D> downstream):Collector<T, ?, Map<K, D>> 
+.groupingBy(Function<? super T, ? extends K> classifier,
+                                  Supplier<M> mapFactory,
+                                  Collector<? super T, A, D> downstream):Collector<T, ?, M>
+.groupingBy(Function<? super T, ? extends K> classifier,
+                                  Supplier<M> mapFactory,
+                                  Collector<? super T, A, D> downstream):Collector<T, ?, M> 
+								  
+.partitioningBy(Predicate<? super T> predicate):Collector<T, ?, Map<Boolean, List<T>>>
+.partitioningBy(Predicate<? super T> predicate,Collector<? super T, A, D> downstream):Collector<T, ?, Map<Boolean, D>> 
+
+.toMap(Function<? super T, ? extends K> keyMapper,
+	   Function<? super T, ? extends U> valueMapper):    Collector<T, ?, Map<K,U>> 
+.toMap(Function<? super T, ? extends K> keyMapper,
+       Function<? super T, ? extends U> valueMapper,
+       BinaryOperator<U> mergeFunction):Collector<T, ?, Map<K,U>> 
+.toMap(Function<? super T, ? extends K> keyMapper,
+                             Function<? super T, ? extends U> valueMapper,
+                             BinaryOperator<U> mergeFunction,
+                             Supplier<M> mapFactory):    Collector<T, ?, M> 
+							 
+.toUnmodifiableMap(Function<? super T, ? extends K> keyMapper,
+                                                Function<? super T, ? extends U> valueMapper):Collector<T, ?, Map<K,U>> 
+.toUnmodifiableMap(Function<? super T, ? extends K> keyMapper,
+                                                Function<? super T, ? extends U> valueMapper,
+												
+                                                BinaryOperator<U> mergeFunction) :Collector<T, ?, Map<K,U>> 
+.toConcurrentMap(Function<? super T, ? extends K> keyMapper,
+                Function<? super T, ? extends U> valueMapper)	:Collector<T, ?, ConcurrentMap<K,U>>											
+.toConcurrentMap(Function<? super T, ? extends K> keyMapper,
+                    Function<? super T, ? extends U> valueMapper,
+                    BinaryOperator<U> mergeFunction) : Collector<T, ?, ConcurrentMap<K,U>>
+.toConcurrentMap(Function<? super T, ? extends K> keyMapper,
+                                       Function<? super T, ? extends U> valueMapper,
+                                       BinaryOperator<U> mergeFunction,
+                                       Supplier<M> mapFactory):    Collector<T, ?, M>		
+									   
+.summarizingInt(ToIntFunction<? super T> mapper):Collector<T, ?, IntSummaryStatistics>
+
+
+practice:--
+✅ 1. groupingBy with Collectors.mapping
+Group data by a field and map elements to a specific value.
+
+Map<String, List<String>> cityToNames = people.stream()
+    .collect(Collectors.groupingBy(
+        Person::getCity,                              // Grouping key
+        Collectors.mapping(Person::getName,           // Downstream: transform Person to name
+                           Collectors.toList())       // Downstream: collect names into list
+    ));
+🧠 Use Case: You want a Map<City, List<Name>> rather than Map<City, List<Person>>.
+
+✅ 2. groupingBy with Collectors.counting
+Count the number of elements in each group.
+
+Map<String, Long> countByCity = people.stream()
+    .collect(Collectors.groupingBy(
+        Person::getCity,
+        Collectors.counting() // downstream: returns count per group
+    ));
+🧠 Use Case: Aggregating data counts per category.
+
+✅ 3. partitioningBy with Collectors.mapping
+Partition data and transform the result.
+
+Map<Boolean, Set<String>> partitionedByAge = people.stream()
+    .collect(Collectors.partitioningBy(
+        p -> p.getAge() > 18,
+        Collectors.mapping(Person::getName, Collectors.toSet())
+    ));
+🧠 Use Case: Divide people into two groups (adults and minors), and extract just their names.
+
+✅ 4. collectingAndThen for post-processing
+Make the result unmodifiable or apply a final transformation.
+
+List<String> unmodifiableList = people.stream()
+    .map(Person::getName)
+    .collect(Collectors.collectingAndThen(
+        Collectors.toList(),                // downstream
+        Collections::unmodifiableList       // finisher
+    ));
+🧠 Use Case: Get an unmodifiable list directly from the stream.
+
+✅ 5. groupingBy with Collectors.reducing
+Perform custom reduction in groups (e.g., find the longest name in each group).
+
+Map<String, Optional<Person>> tallestPersonByCity = people.stream()
+    .collect(Collectors.groupingBy(
+        Person::getCity,
+        Collectors.reducing((p1, p2) -> p1.getHeight() > p2.getHeight() ? p1 : p2)
+    ));
+🧠 Use Case: Reduce each group to a single value (e.g., max, min, sum).
+
+✅ 6. flatMapping (Java 9+)
+Flatten nested collections in a downstream collector.
+
+Map<String, Set<String>> hobbiesByCity = people.stream()
+    .collect(Collectors.groupingBy(
+        Person::getCity,
+        Collectors.flatMapping(p -> p.getHobbies().stream(), Collectors.toSet())
+    ));
+🧠 Use Case: Flatten nested lists/collections and collect them within groups.
+----------------------------------------------------------------------------------------------------------------------------------------
+Optional:-
+
+.empty() : Optional<T>  Returns an empty Optional instance.
+
+.of(T value) : Optional<T> Returns an Optional with the specified non-null value.
+
+.ofNullable(T value) : Optional<T> Returns an Optional describing the specified value, or empty if value is null.
+
+.get() : T  Returns the value if present, otherwise throws NoSuchElementException.
+
+.isPresent() : boolean  Returns true if a value is present, else false.
+
+.isEmpty() : boolean  Returns true if no value is present, else false. (Since Java 11)
+
+.ifPresent(Consumer<? super T> action) : void  If a value is present, performs the given action with the value.
+
+.ifPresentOrElse(Consumer<? super T> action, Runnable emptyAction) : void
+If a value is present, performs the action, otherwise runs emptyAction. (Since Java 9)
+
+.orElse(T other) : T   Returns the value if present, otherwise returns other.
+
+.orElseGet(Supplier<? extends T> supplier) : T  Returns the value if present, otherwise invokes supplier and returns result.
+
+.orElseThrow() : T  Returns the value if present, otherwise throws NoSuchElementException. (Since Java 10)
+
+.orElseThrow(Supplier<? extends X> exceptionSupplier) : T  Returns the value if present, otherwise throws exception provided by supplier.
+
+.filter(Predicate<? super T> predicate) : Optional<T>  If a value is present and matches predicate, returns Optional describing the value, otherwise empty.
+
+.map(Function<? super T, ? extends U> mapper) : Optional<U> If a value is present, applies the mapping function and returns an Optional describing the result.
+
+.flatMap(Function<? super T, Optional<U>> mapper) : Optional<U>  If a value is present, applies the mapping function that returns an Optional and returns that Optional.
+
+.stream() : Stream<T>  Returns a sequential Stream containing the value if present, otherwise empty stream. (Since Java 9)
+
+-------------------------------------------------------------------------------------------
+
+File IO:-
+--------
+
+File:-
+
+types of streams discussed:
+
+Byte Streams:-
+InputStream & OutputStream: These are the two main abstract classes that deal with byte data. InputStream is used for reading byte data,
+ while OutputStream is used for writing byte data.
+ByteArrayInputStream & ByteArrayOutputStream: Specifically designed for handling byte arrays.
+ ByteArrayInputStream allows input from a byte array and ByteArrayOutputStream writes data to a byte array in memory.
+FileInputStream & FileOutputStream: These are concrete implementations that read from and write to files in the form of bytes.
+
+Character Streams:-
+Reader & Writer: These two abstract classes are for handling character data. Reader is the abstract class for reading character data,
+ whereas Writer is for writing character data.
+FileReader & FileWriter: These are implementations of Reader and Writer that allow reading from and writing to text files.
+
+Data Streams:-
+DataInputStream & DataOutputStream: These streams are specialized for reading and writing primitive data types (like int, float, etc.). 
+They enable reading and writing in a machine-independent way.
+Example Use Case: Data streams are useful when dealing with data that includes mixed types, allowing for easy
+ serialization and deserialization of primitives.
+
+Object Streams:-
+ObjectInputStream & ObjectOutputStream: These streams are designed for reading and writing entire objects to and from streams. 
+They handle serialization, which converts the state of an object into a byte stream, and deserialization, which converts the
+byte stream back into an object.
+
+NIO (New IO) Streams:-
+Non-blocking operations introduced in Java NIO, which allows for more scalable and efficient I/O operations, particularly useful in 
+high-performance applications.
+NIO also introduces channels and buffers, which enhance data handling compared to traditional stream handling.
+Each type of stream serves a specific purpose and is designed to efficiently manage different types of data, 
+improving program performance and simplifying I/O operations. If you want more details on any specific stream or need examples, feel free to ask!
+
+Character Streams:
+
+Character streams read/write 16-bit Unicode characters (i.e., char), ideal for text data handling, 
+unlike byte streams which work with raw bytes.
+
+ Reader (abstract class):-
+Base abstract class for reading character streams.
+
+Important methods:
+
+Method	Description	Use Case
+int read()	Reads a single character, returns int or -1										Reading characters one-by-one
+int read(char[] cbuf)	Reads chars into array, returns number 	read						Bulk reading into buffer
+int read(char[] cbuf, int off, int len)	Reads chars into array from offset off up to len	Partial reads
+long skip(long n)	Skips n characters in the stream										Skip characters
+boolean ready()	Checks if stream is ready to be read										Non-blocking reads
+void close()	Closes the stream															Release resources
+void mark()
+void reset()
+2. Writer (abstract class):-
+Base abstract class for writing character streams.
+
+Important methods:
+
+Method	Description	Use Case
+void write(int c)	Writes a single character												Write chars one-by-one
+void write(char[] cbuf)	Writes an array of chars											Bulk write
+void write(char[] cbuf, int off, int len)	Writes chars from offset off and length len	 	Partial writes
+void write(String str)	Writes a string														Write strings
+void flush()	Flushes the stream buffer													Ensure all buffered data is written
+void close()	Closes the stream															Release resources
+append(CharSequence)
+append(CharSequence ,Start,end)
+append(char)
+.nullWriter()
+
+FileReader
+Extends InputStreamReader → Reader
+
+Used for reading characters from files.
+
+Constructors: FileReader(String fileName), FileReader(File file)
+
+Important methods: inherits from Reader (read(), read(char[]), close())
+
+Use case: reading text files with platform default charset.
+
+Example:
+
+FileReader fr = new FileReader("file.txt");
+int ch;
+while ((ch = fr.read()) != -1) {
+    System.out.print((char) ch);
+}
+fr.close();
+4. FileWriter
+Extends OutputStreamWriter → Writer
+
+Used for writing characters to files.
+
+Constructors: FileWriter(String fileName), FileWriter(File file)
+
+Important methods: inherits from Writer (write(), flush(), close())
+
+Use case: writing text files with platform default charset.
+
+Example:
+
+java
+Copy
+Edit
+FileWriter fw = new FileWriter("file.txt");
+fw.write("Hello, World!");
+fw.close();
+5. BufferedReader
+Wraps any Reader, adds buffering for efficient reading.
+
+Adds convenient method: String readLine() — reads a whole line.
+
+Important methods:
+
+Method	Description	Use Case
+String readLine()	Reads a whole line (excluding line terminator)	Reading line-based text files
+int read()	Reads a single character	Buffered char reading
+void close()	Closes underlying reader	Release resources
+Stream lines()
+Use case: reading lines from text files or console input efficiently.
+
+Example:
+
+BufferedReader br = new BufferedReader(new FileReader("file.txt"));
+String line;
+while ((line = br.readLine()) != null) {
+    System.out.println(line);
+}
+br.close();
+6. BufferedWriter
+Wraps any Writer, adds buffering.
+
+Adds newLine() method to write platform-specific newline.
+
+Important methods:
+
+Method	Description	Use Case
+void newLine()	Writes platform-specific line separator	Writing lines to files
+void write(String s)	Writes a string	Buffered write
+void flush()	Flush buffer	Ensure data written
+void close()	Close and flush	Release resources
+
+Example:
+
+BufferedWriter bw = new BufferedWriter(new FileWriter("file.txt"));
+bw.write("Hello");
+bw.newLine();
+bw.write("World");
+bw.close();
+7. InputStreamReader
+Bridge between byte streams (InputStream) and character streams (Reader).
+
+Converts bytes to chars using a charset.
+
+Constructors: InputStreamReader(InputStream in), InputStreamReader(InputStream in, Charset cs)
+
+Important methods: inherits from Reader.
+
+Use case: reading text from byte sources like files, sockets, with specific charset.
+
+Example:
+
+InputStreamReader isr = new InputStreamReader(new FileInputStream("file.txt"), StandardCharsets.UTF_8);
+int c;
+while ((c = isr.read()) != -1) {
+    System.out.print((char) c);
+}
+isr.close();
+8. OutputStreamWriter
+Bridge between byte streams (OutputStream) and character streams (Writer).
+
+Converts chars to bytes using a charset.
+
+Constructors: OutputStreamWriter(OutputStream out), OutputStreamWriter(OutputStream out, Charset cs)
+
+Important methods: inherits from Writer.
+
+Use case: writing text to byte-based destinations with charset control.
+
+Example:
+OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream("file.txt"), StandardCharsets.UTF_8);
+osw.write("Hello World");
+osw.close();
+9. CharArrayReader
+Reads characters from a character array.
+
+Constructors: CharArrayReader(char[] buf)
+
+Use case: reading data from char arrays as if it were a stream.
+
+10. CharArrayWriter
+Writes characters into a buffer (character array internally).
+
+Can get the written content as a char array or string.
+
+Use case: temporary storage or manipulation of character data before writing to another stream.
+
+Example:
+
+CharArrayWriter caw = new CharArrayWriter();
+caw.write("Hello");
+String s = caw.toString();  // "Hello"
+11. PipedReader and PipedWriter
+Used for communication between threads.
+
+PipedWriter writes characters that PipedReader reads.
+
+Use case: thread-safe inter-thread communication with character streams.
+
+
+
