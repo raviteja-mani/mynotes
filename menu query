@@ -1,0 +1,89 @@
+insert
+	into
+	menu_items
+(platform_id,
+	type,
+	is_platform_admin,
+	is_party_only_context,
+	is_party_network_context,
+	is_party_admin,
+	is_network_admin,
+	is_normal_user,
+	rbac,
+	 label,
+	"key",
+	-- Escape the key keyword if it's a reserved word
+ 
+	icon_name,
+	icon_type,
+	active_icon_name,
+	url,
+	matching_urls,
+	is_hidden,
+	is_wide_view_enabled
+)
+(
+	select
+		'test' as platform_id ,
+		data.menu_item->>'type' as type,
+		(data.menu_item->>'isPlatformAdmin')::boolean as isPlatformAdmin ,
+		(data.menu_item->>'isPartyOnlyContext')::boolean as isPartyOnlyContext,
+		(data.menu_item->>'isPartyNetworkContext')::boolean as isPartyNetworkContext,
+		(data.menu_item->>'isPartyAdmin')::boolean as isPartyAdmin,
+		(data.menu_item->>'isNetworkAdmin')::boolean as isNetworkAdmin,
+		(data.menu_item->>'isNormalUser')::boolean as isNormalUser,
+		data.menu_item->'rbac' as rbac,
+		data.menu_item->'label' as label,
+		data.menu_item->'key' as key,
+		data.menu_item->>'iconName' as iconName,
+		data.menu_item->>'iconType' as iconType,
+		data.menu_item->>'activeIconName' as activeIconName,
+		data.menu_item->>'url' as url,
+		data.menu_item->'matchingUrls' as matchingUrls,
+		(data.menu_item->>'hidden')::boolean as hidden,
+		(data.menu_item->>'isWideViewEnabled')::boolean
+	from
+		(
+		select
+			json_array_elements(tj.test_json::json ) as menu_item
+		from
+			test_json tj
+	union all
+		select
+			json_array_elements((menu_item2::json)->'children') as menu_item
+		from
+			(
+			select
+				json_array_elements(tj.test_json::json) as menu_item2
+			from
+				test_json tj) as menu
+		where
+			((menu.menu_item2::jsonb)->'children' is not null)) as data)
+			
+			
+
+
+
+platformAdmin -
+
+
+partyAdmin -
+networkAdmin -
+isPartyOnlyContext - 
+isPartyNetworkContext -
+isNormalUser -
+
+
+
+
+menu_id 
+context --> partyOnly or partyNetwork or NA for platformAdmin 
+roles -->
+				1.partyOnly --> partyAdmin or normalUser
+				2.partyNetwork --> partyAdmin or networkAdmin or normalUser 
+				3.platformSpecific --> platformAdmin 
+
+platformAdmin
+
+menu 
+
