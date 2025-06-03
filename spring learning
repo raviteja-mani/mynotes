@@ -1,0 +1,156 @@
+Spring RoadMap:
+1.) Spring Framework
+->how to create annotation ,use of reflections in java
+->maven lifecycle
+->tomcat internally work how request comes 
+->Inversion of control, dependency injection
+-> Bean life cycle 
+-> Bean scopes
+->aop
+->logging frameworks
+-> profiles
+-> caching -ehcaching, redis- what portno, what methods dependecies
+->web on servlet stack(webmvc)
+
+->project versioning-parentbom
+@Validated
+2.) Spring boot 
+-> thread pools 
+->methods(get,post,put,patch) ,responseEntity 
+->rest apis 
+->exception handling - error codes
+->actuators
+->Interceptors and filters
+-> communication - webClient,RestTemplate,Feign client
+-> liquibase
+->json handling -gson,jackson,ObjectMapping , serialization and deserialization
+->Excel handling dependency
+->metrics -promethius
+-> batch processing
+-> EventHandling (Asynchronous coding)
+-> db connection - normal jdbcTemplate ,JPA 
+
+3.) Data access (JPA)
+->all annotations
+->transation management(@Transactional)
+->pagination,@Query
+
+4.)Spring Security
+-> Authentication and Authorization
+-> all types of tokens 
+->Oauth2.0
+->sso
+->ldap
+->basci Authentication to advansed authentication and authorization
+->Filters
+->XSRF attacks,CORS ,,eg..some responseHeaders required
+
+5.)junit testing
+-------------------------------
+async , eventHandling
+->asyncronous programming
+->reactive stack
+6.)spring kafka(Asynchronous coding)
+
+
+7.)Spring cloud(microservices) - skip this
+->consul for spring cloud
+->service registry
+->service discovery
+->tracing
+
+
+
+8.)caching(Redis) - mechanisms
+
+9.)Sql queries
+
+10.) Angular
+-> 2 way data binding
+-> pipes
+-> js, ts
+
+postgresql - pgbouncer,handling json data 
+docker- files
+kubernates- basic commands and internal details
+
+all versions:
+java - 
+spring frmawork -
+maven - 
+tomcat - 
+angular - 
+ts -
+node - 
+postgresql - 
+
+
+dependencies:-
+excel handling -
+json handling - Gson or jackson 
+liquibase -
+Oauth resource,auth - 
+
+usecases:
+-> how to develop a apis 
+-> handling files apis edgecases 
+-> batch processing 
+-> how to write asyncronous apis calls 
+-> json data handling using gson , jackson and ObjectMapping classes 
+->multi tenency 
+work that i have done:-
+1.) enhancements for existing apis 
+2.) developting basic configuration apis - crud operations 
+3.) developting features like  - menuService,themeservice,homepage(ui),configurationservice
+4.) upload servie - uses kafka for processing of entities that is uploaded
+5.) file handling apis like upload ,download,search apis ,import, export apis 
+6.) microservice security - paths , authentication and authorization of microservices 
+7.) junit test cases - mockito,mockmvc
+8.) developing microfrontends for taxservice
+
+for Interview :
+1.)Intro - work experience - what project, what kind of work did i do?
+2.)
+edgeverve : projects 
+1.) fabric
+2.) neuralconnect
+3.) 
+
+Spring Framework:-
+ 
+ Reflections:
+ 
+ ->this is used to examine the class, interface ,methods and fields at runtime and even change the  behaviour of class at runtime
+ -> to reflect a class we need to get object first 
+ Class.forName("Bird")
+ Bird.class 
+ obj.getClass()
+ .getFields()
+ .getMethods()
+ .getConstructors()
+ 
+ Annotations:
+ ->Its kind of like meta data to java code , can be added on  interfaces ,class , methods ,parameters..etc
+ ->using reflections we can read annotations , like what annotations are there on that class 
+ types:
+ predefined -> used on annotations,used on java code
+ custom annotation 
+ Used on java Code:-
+ @Override
+ @SafeAurgs -heap pollution
+ @SuppresWarning tells compiler to ignore the compiletime warnings 
+ @FunctionalInterface - can have only one method 
+ 
+ Used On annotations:-
+ @Target WILL RESTRYIC WHERE TO USE THIS ANNOTATION (ElementType= "METHOD,CONSTRUCTOR,PARAMETER,
+ @Retention(RetentionPolacy.Source,class,runtime) (After compilation this annotation is not included in .class file when SOURCE , other wise it addes
+ @Documented
+ @Inherited anntoation gets inherited to subclasses
+ @Repeatable that annotation can be repeated multiple times
+ custom annotation:-
+@Target
+@Retention 
+ @interface name{
+	String name() default  ""; this is kind of like field ,,return type is restricted to primitive, class, String,enums, arrays
+}
+ 
